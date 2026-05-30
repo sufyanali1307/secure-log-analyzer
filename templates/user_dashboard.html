@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Dashboard | Secure Log Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">📁 My Log Analyses</h1>
+            <div class="space-x-3">
+                <a href="{{ url_for('upload') }}" class="bg-blue-500 text-white px-4 py-2 rounded">⬆️ Upload New</a>
+                <a href="{{ url_for('logout') }}" class="bg-red-500 text-white px-4 py-2 rounded">🚪 Logout</a>
+            </div>
+        </div>
+
+        {% if results %}
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="min-w-full">
+                <thead class="bg-gray-200">
+                    <tr><th class="p-3 text-left">Filename</th><th>Uploaded</th><th class="text-center">Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for res in results %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3">{{ res.filename }}</td>
+                        <td>{{ res.uploaded_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td class="text-center"><a href="{{ url_for('view_result', result_id=res.id) }}" class="bg-green-500 text-white px-3 py-1 rounded text-sm">View Results</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4">
+            <p>You haven't uploaded any log files yet. <a href="{{ url_for('upload') }}" class="text-blue-600 underline">Upload your first log file</a>.</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

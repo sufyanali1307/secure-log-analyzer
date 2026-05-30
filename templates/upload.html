@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload | Secure Log Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;  /* same as login page right side */
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        /* White card (same as login card) */
+        .upload-card {
+            background: white;
+            border-radius: 2rem;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 560px;
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .upload-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 25px 40px -12px rgba(0,0,0,0.15);
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0F2C39;
+            margin: 0;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.2rem;
+        }
+        .nav-links a {
+            color: #1A4A5F;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+            border-bottom: 1px dashed transparent;
+        }
+        .nav-links a:hover {
+            border-bottom-color: #1A4A5F;
+            color: #0B2B40;
+        }
+
+        /* Upload zone */
+        .upload-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 1rem;
+            background: #f1f5f9;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 1.8rem;
+        }
+        .upload-zone:hover {
+            border-color: #1A4A5F;
+            background: #f8fafc;
+            transform: scale(1.01);
+        }
+        .upload-icon {
+            font-size: 3.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .upload-zone p {
+            color: #334155;
+            margin-bottom: 0.5rem;
+        }
+        .browse-btn {
+            background: #e2e8f0;
+            color: #1A4A5F;
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            font-weight: 500;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+        .browse-btn:hover {
+            background: #cbd5e1;
+        }
+        .file-hint {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.75rem;
+        }
+
+        /* Submit button (same teal style as login button) */
+        .btn-upload {
+            width: 100%;
+            background: #1A4A5F;
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.9rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-upload:hover {
+            background: #0B2B40;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(26,74,95,0.3);
+        }
+
+        /* Flash message (same as login success style) */
+        .flash-success {
+            background: #D1FAE5;
+            border-left: 4px solid #10B981;
+            color: #065F46;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 500px) {
+            .upload-card {
+                padding: 1.5rem;
+            }
+            .header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .nav-links {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="upload-card">
+        <div class="header">
+            <h1>📁 Upload Log File</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('history') }}">📜 History</a>
+                <a href="{{ url_for('logout') }}">🚪 Logout</a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for msg in messages %}
+                    <div class="flash-success">{{ msg }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="post" enctype="multipart/form-data">
+            <div class="upload-zone" onclick="document.getElementById('logfileInput').click()">
+                <div class="upload-icon">📂</div>
+                <p>Drag & drop your .log file or</p>
+                <label class="browse-btn">Browse Files</label>
+                <input type="file" name="logfile" id="logfileInput" accept=".log" class="hidden" style="display: none;" required>
+                <div class="file-hint">Only .log files accepted</div>
+            </div>
+
+            <button type="submit" class="btn-upload">
+                🚀 Run MapReduce Analysis
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // Optional: show selected filename
+        document.getElementById('logfileInput').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name;
+            if (fileName) {
+                const zone = document.querySelector('.upload-zone p');
+                zone.innerHTML = `Selected: ${fileName}<br>Click or drag another file`;
+            }
+        });
+    </script>
+</body>
+</html>

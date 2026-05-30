@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome | Secure Log Analyzer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: #f0f4f8;
+        }
+
+        /* Split Layout */
+        .split-layout {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Left Side - Branding */
+        .brand-section {
+            flex: 1.2;
+            background: linear-gradient(135deg, #0B2B40 0%, #1A4A5F 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-section::before {
+            content: '';
+            position: absolute;
+            width: 150%;
+            height: 150%;
+            background: rgba(255,255,255,0.05);
+            transform: rotate(45deg);
+            top: -25%;
+            right: -25%;
+            border-radius: 50%;
+        }
+
+        .brand-content {
+            max-width: 500px;
+            z-index: 2;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .brand-content h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #fff, #A0D2E4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .brand-content h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            opacity: 0.95;
+        }
+
+        .brand-content p {
+            font-size: 1rem;
+            line-height: 1.6;
+            opacity: 0.85;
+            margin-bottom: 2rem;
+        }
+
+        .brand-features {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .brand-features span {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(4px);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Right Side - Form */
+        .form-section {
+            flex: 1;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 2rem;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.8s ease-out 0.1s both;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-header .logo {
+            font-size: 2.2rem;
+            margin-bottom: 0.8rem;
+            color: #1A4A5F;
+        }
+
+        .form-header h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #0F2C39;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p {
+            color: #6B7A8A;
+            font-size: 0.9rem;
+        }
+
+        /* Input Fields */
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #1E2F3A;
+            font-size: 0.85rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            border: 1.5px solid #E2E8F0;
+            border-radius: 0.75rem;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            background: white;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #1A4A5F;
+            box-shadow: 0 0 0 3px rgba(26,74,95,0.1);
+        }
+
+        /* Login Button */
+        .login-btn {
+            width: 100%;
+            padding: 0.9rem;
+            background: #1A4A5F;
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 0.5rem;
+        }
+
+        .login-btn:hover {
+            background: #0B2B40;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(26,74,95,0.3);
+        }
+
+        /* Register Link */
+        .register-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+        }
+        .register-link a {
+            color: #1A4A5F;
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 1px dashed #1A4A5F;
+        }
+        .register-link a:hover {
+            border-bottom: 1px solid #1A4A5F;
+        }
+
+        /* Flash Messages */
+        .flash-messages {
+            margin-bottom: 1.5rem;
+        }
+
+        .flash-error {
+            background: #FEE2E2;
+            border-left: 4px solid #EF4444;
+            color: #991B1B;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        /* Form Footer */
+        .form-footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #EDF2F7;
+        }
+
+        .form-footer p {
+            color: #8A99A8;
+            font-size: 0.75rem;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .split-layout {
+                flex-direction: column;
+            }
+            .brand-section {
+                flex: 0 0 auto;
+                padding: 2rem;
+                text-align: center;
+            }
+            .brand-content {
+                text-align: center;
+            }
+            .brand-features {
+                justify-content: center;
+            }
+            .form-section {
+                flex: 1;
+                align-items: flex-start;
+                padding-top: 3rem;
+            }
+            body {
+                overflow: auto;
+                height: auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 1.8rem;
+            }
+            .brand-content h1 {
+                font-size: 2.5rem;
+            }
+            .brand-content h2 {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="split-layout">
+        <!-- Left Side: Branding -->
+        <div class="brand-section">
+            <div class="brand-content">
+                <h1>Welcome</h1>
+                <h2>Secure Cloud Log Analyzer</h2>
+                <p>Upload, process, and visualize massive log files using a powerful, parallel MapReduce engine.</p>
+                <div class="brand-features">
+                    <span>🔍 Parallel Processing</span>
+                    <span>☁️ Cloud-Native</span>
+                    <span>📊 Real-time Analytics</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Login Form -->
+        <div class="form-section">
+            <div class="login-card">
+                <div class="form-header">
+                    <div class="logo"></div>
+                    <h3></h3>
+                    <p>Sign in to continue</p>
+                </div>
+
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for msg in messages %}
+                                <div class="flash-error">{{ msg }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <form method="post">
+                    <div class="input-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus>
+                    </div>
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="login-btn">Sign In →</button>
+                </form>
+
+                <!-- Register link added here -->
+                <div class="register-link">
+                    Don't have an account? <a href="{{ url_for('register') }}">Create one</a>
+                </div>
+
+                <div class="form-footer">
+                    <p>Powered by Parallel MapReduce & Neon DB</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

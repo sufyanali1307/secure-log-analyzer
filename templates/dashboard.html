@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Result | Secure Log Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            padding: 2rem 1.5rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0F2C39;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+        .nav-links a {
+            color: #1A4A5F;
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px dashed transparent;
+            transition: all 0.2s;
+        }
+        .nav-links a:hover {
+            border-bottom-color: #1A4A5F;
+            color: #0B2B40;
+        }
+
+        /* Card style (same as login/upload) */
+        .card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.02);
+            margin-bottom: 1.8rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            box-shadow: 0 20px 30px -12px rgba(0,0,0,0.1);
+        }
+
+        /* File info card */
+        .file-info {
+            border-left: 6px solid #1A4A5F;
+        }
+        .file-info h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #0F2C39;
+            margin-bottom: 0.25rem;
+        }
+        .file-info p {
+            color: #475569;
+            font-size: 0.85rem;
+        }
+
+        /* Stat cards */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+        .stat-number {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: #1A4A5F;
+            margin: 0.5rem 0;
+        }
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        .stat-icon {
+            font-size: 2rem;
+        }
+
+        /* Chart cards */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.8rem;
+            margin-bottom: 2rem;
+        }
+        .chart-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #0F2C39;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        /* Data tables */
+        .table-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.8rem;
+        }
+        .data-table {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+        }
+        .data-table h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1A4A5F;
+            margin-bottom: 1rem;
+            border-left: 4px solid #1A4A5F;
+            padding-left: 0.75rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 0.6rem 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            color: #475569;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        td {
+            color: #1e293b;
+            font-weight: 500;
+        }
+        .error-code {
+            font-family: monospace;
+            color: #dc2626;
+        }
+
+        /* Button style (if needed) */
+        .btn-teal {
+            background: #1A4A5F;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        .btn-teal:hover {
+            background: #0B2B40;
+        }
+
+        /* Responsive */
+        @media (max-width: 700px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+            body {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 MapReduce Log Analyzer</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('upload') }}">📤 Upload New</a>
+                <a href="{{ url_for('history') }}">📜 History</a>
+                <a href="{{ url_for('logout') }}">🚪 Logout</a>
+            </div>
+        </div>
+
+        <!-- File info card -->
+        <div class="card file-info">
+            <h2>{{ result.filename }}</h2>
+            <p>Uploaded on: {{ result.uploaded_at.strftime('%B %d, %Y at %H:%M:%S') }}</p>
+        </div>
+
+        <!-- Stats row -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-number">{{ result.error_counts.values()|sum }}</div>
+                <div class="stat-label">Total HTTP Errors (4xx/5xx)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-number">{{ result.hour_counts.values()|sum }}</div>
+                <div class="stat-label">Total Requests Processed</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="chart-grid">
+            <div class="chart-card">
+                <div class="chart-title">🚨 Error Distribution</div>
+                <canvas id="errorChart" height="250"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">⏰ Hourly Traffic Peak</div>
+                <canvas id="hourChart" height="250"></canvas>
+            </div>
+        </div>
+
+        <!-- Data tables -->
+        <div class="table-grid">
+            <div class="data-table">
+                <h3>🔴 HTTP Error Codes</h3>
+                <table>
+                    <thead>
+                        <tr><th>Status Code</th><th>Count</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for code, count in result.error_counts.items() %}
+                        <tr>
+                            <td class="error-code">{{ code }}</td>
+                            <td><strong>{{ count }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="data-table">
+                <h3>🕒 Hourly Request Counts</h3>
+                <table>
+                    <thead>
+                        <tr><th>Hour (24h)</th><th>Requests</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for hour, count in result.hour_counts.items()|sort %}
+                        <tr>
+                            <td>{{ hour }}:00</td>
+                            <td><strong>{{ count }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Error bar chart
+        const errorLabels = {{ result.error_counts.keys()|list|tojson }};
+        const errorData = {{ result.error_counts.values()|list|tojson }};
+        const ctxError = document.getElementById('errorChart').getContext('2d');
+        new Chart(ctxError, {
+            type: 'bar',
+            data: {
+                labels: errorLabels,
+                datasets: [{
+                    label: 'Occurrences',
+                    data: errorData,
+                    backgroundColor: '#1A4A5F',
+                    borderRadius: 6,
+                    barPercentage: 0.7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { labels: { color: '#334155' } }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1, color: '#475569' }, grid: { color: '#e2e8f0' } },
+                    x: { ticks: { color: '#475569' } }
+                }
+            }
+        });
+
+        // Hour line chart
+        const hourLabelsSorted = {{ result.hour_counts.keys()|list|sort|tojson }};
+        const hourDataSorted = hourLabelsSorted.map(h => {{ result.hour_counts|tojson }}[h]);
+        const ctxHour = document.getElementById('hourChart').getContext('2d');
+        new Chart(ctxHour, {
+            type: 'line',
+            data: {
+                labels: hourLabelsSorted.map(h => h + ':00'),
+                datasets: [{
+                    label: 'Requests',
+                    data: hourDataSorted,
+                    borderColor: '#1A4A5F',
+                    backgroundColor: 'rgba(26, 74, 95, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#1A4A5F',
+                    pointBorderColor: 'white',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#334155' } }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1, color: '#475569' }, grid: { color: '#e2e8f0' } },
+                    x: { ticks: { color: '#475569' } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

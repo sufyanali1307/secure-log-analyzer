@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History | Secure Log Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            padding: 2rem 1.5rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0F2C39;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.2rem;
+        }
+        .nav-links a {
+            color: #1A4A5F;
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px dashed transparent;
+            transition: all 0.2s;
+        }
+        .nav-links a:hover {
+            border-bottom-color: #1A4A5F;
+            color: #0B2B40;
+        }
+
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.02);
+            overflow: hidden;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #f1f5f9;
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-weight: 600;
+            color: #0F2C39;
+            font-size: 0.9rem;
+        }
+        td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            color: #1e293b;
+        }
+        tr:hover {
+            background: #f8fafc;
+            transition: background 0.2s;
+        }
+
+        .filename {
+            font-weight: 500;
+            color: #1A4A5F;
+        }
+
+        .btn-view {
+            background: #1A4A5F;
+            color: white;
+            padding: 0.3rem 1rem;
+            border-radius: 2rem;
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+        .btn-view:hover {
+            background: #0B2B40;
+            transform: translateY(-1px);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            th, td {
+                padding: 0.75rem 1rem;
+            }
+            .header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Analysis History</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('upload') }}">⬆️ Upload New</a>
+                <a href="{{ url_for('logout') }}">🚪 Logout</a>
+            </div>
+        </div>
+
+        <div class="card">
+            {% if results %}
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Filename</th>
+                            <th>Uploaded At</th>
+                            <th style="text-align: center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for res in results %}
+                        <tr>
+                            <td class="filename">{{ res.filename }}</td>
+                            <td>{{ res.uploaded_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td style="text-align: center">
+                                <a href="{{ url_for('view_result', result_id=res.id) }}" class="btn-view">View →</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="padding: 3rem; text-align: center; color: #64748b;">
+                No analyses found. <a href="{{ url_for('upload') }}" style="color: #1A4A5F; text-decoration: underline;">Upload your first log file</a>.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
