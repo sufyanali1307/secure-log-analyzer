@@ -1,0 +1,463 @@
+{% extends "base.html" %}
+
+{% block title %}{{ result.filename }} - Secure Log Analyzer{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+    <div>
+        <h1>📊 <span class="accent">Analysis Result</span></h1>
+        <p>
+            <i class="fa-solid fa-file-lines"></i>
+            <strong>{{ result.filename }}</strong> · 
+            Uploaded {{ result.uploaded_at.strftime('%B %d, %Y at %H:%M') }}
+        </p>
+    </div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <span class="badge success">
+            <span class="status-dot" style="display:inline-block;margin-right:0.4rem;"></span>
+            Live
+        </span>
+        <a href="{{ url_for('upload') }}" class="btn btn-primary">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Upload New
+        </a>
+        <button onclick="window.print()" class="btn btn-secondary">
+            <i class="fa-solid fa-print"></i> Print
+        </button>
+    </div>
+</div>
+
+<!-- ─────────── FILE META CARDS ─────────── -->
+<div class="stats-grid fade-in">
+    {% if result.file_size %}
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-hard-drive"></i></div>
+            <span class="stat-label">File Size</span>
+        </div>
+        <div class="stat-value">{{ (result.file_size / 1024)|round(1) }}<span style="font-size:1rem;color:var(--text-muted)"> KB</span></div>
+    </div>
+    {% endif %}
+
+    {% if result.total_lines %}
+    <div class="stat-card success">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-list-ol"></i></div>
+            <span class="stat-label">Total Lines</span>
+        </div>
+        <div class="stat-value">{{ result.total_lines }}</div>
+    </div>
+    {% endif %}
+
+    {% if result.processing_time %}
+    <div class="stat-card high">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-stopwatch"></i></div>
+            <span class="stat-label">Processing Time</span>
+        </div>
+        <div class="stat-value">{{ result.processing_time }}<span style="font-size:1rem;color:var(--text-muted)">s</span></div>
+    </div>
+    {% endif %}
+
+    <div class="stat-card critical">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <span class="stat-label">Error Rate</span>
+        </div>
+        <div class="stat-value">{{ result.error_rate() }}<span style="font-size:1rem;color:var(--text-muted)">%</span></div>
+    </div>
+</div>
+
+<!-- ─────────── ANOMALIES ALERT ─────────── -->
+{% if anomalies %}
+<div class="alert critical fade-in">
+    <i class="fa-solid fa-radiation" style="font-size:1.5rem;"></i>
+    <div style="flex:1;">
+        <strong style="font-size:1.05rem;">⚠️ Anomalies Detected ({{ anomalies|length }})</strong>
+        {% if anomaly_summary %}
+        <div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+            {% for sev, count in anomaly_summary.items() %}
+                {% if count > 0 %}
+                <span class="badge {{ sev|lower }}">{{ sev }}: {{ count }}</span>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="table-card fade-in">
+    <div class="chart-header">
+        <div class="chart-title">
+            <i class="fa-solid fa-radiation"></i>
+            <span>Detected Anomalies</span>
+        </div>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Severity</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in anomalies %}
+            <tr>
+                <td><span class="badge {{ (a.severity or 'low')|lower }}">{{ a.severity or 'LOW' }}</span></td>
+                <td>{{ a.type or a.method or 'Pattern' }}</td>
+                <td>{{ a.reason or ('Unusual pattern at hour ' ~ a.hour) }}</td>
+                <td><code style="color:var(--accent-cyan)">{{ a.count or a.z_score or '--' }}</code></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- ─────────── MAIN STATS ─────────── -->
+<div class="stats-grid fade-in">
+    <div class="stat-card critical">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-bug"></i></div>
+            <span class="stat-label">Total HTTP Errors</span>
+        </div>
+        <div class="stat-value" id="total-errors">{{ result.total_errors() }}</div>
+        <div class="stat-change">4xx + 5xx responses</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-chart-line"></i></div>
+            <span class="stat-label">Total Requests</span>
+        </div>
+        <div class="stat-value" id="total-requests">{{ result.total_requests() }}</div>
+        <div class="stat-change">All log entries</div>
+    </div>
+
+    <div class="stat-card success">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-link"></i></div>
+            <span class="stat-label">Unique URLs</span>
+        </div>
+        <div class="stat-value">{{ result.url_counts|length if result.url_counts else 0 }}</div>
+        <div class="stat-change">Different endpoints</div>
+    </div>
+
+    <div class="stat-card medium">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-globe"></i></div>
+            <span class="stat-label">Countries</span>
+        </div>
+        <div class="stat-value">{{ result.country_counts|length if result.country_counts else 0 }}</div>
+        <div class="stat-change">Unique origins</div>
+    </div>
+</div>
+
+<!-- ─────────── CHARTS ─────────── -->
+<div class="charts-grid fade-in">
+    <div class="chart-card">
+        <div class="chart-header">
+            <div class="chart-title">
+                <i class="fa-solid fa-bug"></i>
+                <span>Error Distribution</span>
+            </div>
+            {% if result.error_counts %}
+            <span class="badge critical">{{ result.error_counts|length }} types</span>
+            {% endif %}
+        </div>
+        <div class="chart-body">
+            {% if result.error_counts %}
+            <canvas id="errorChart"></canvas>
+            {% else %}
+            <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--accent-green);">
+                <div style="text-align:center;">
+                    <i class="fa-solid fa-circle-check" style="font-size:3rem;margin-bottom:1rem;"></i>
+                    <p>No HTTP errors detected ✅</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <div class="chart-header">
+            <div class="chart-title">
+                <i class="fa-solid fa-clock"></i>
+                <span>Hourly Traffic Peak</span>
+            </div>
+            {% if result.hour_counts %}
+            <span class="badge high">{{ result.hour_counts|length }} hours</span>
+            {% endif %}
+        </div>
+        <div class="chart-body">
+            {% if result.hour_counts %}
+            <canvas id="hourChart"></canvas>
+            {% else %}
+            <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);">
+                <p>No traffic data available</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ─────────── DATA TABLES ─────────── -->
+<div class="charts-grid fade-in">
+    <div class="table-card">
+        <div class="chart-header">
+            <div class="chart-title">
+                <i class="fa-solid fa-bug" style="color:var(--accent-red);"></i>
+                <span>HTTP Error Codes</span>
+            </div>
+        </div>
+        {% if result.error_counts %}
+        <table class="data-table">
+            <thead>
+                <tr><th>Status Code</th><th>Count</th><th>Severity</th></tr>
+            </thead>
+            <tbody>
+                {% for code, count in result.error_counts.items()|sort(attribute='1', reverse=true) %}
+                <tr>
+                    <td><code style="color:var(--accent-red);font-weight:600;">{{ code }}</code></td>
+                    <td><strong>{{ count }}</strong></td>
+                    <td>
+                        {% if code.startswith('5') %}
+                            <span class="badge critical">Server Error</span>
+                        {% elif code.startswith('4') %}
+                            <span class="badge high">Client Error</span>
+                        {% else %}
+                            <span class="badge low">Other</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align:center;padding:2rem;color:var(--text-muted);">
+            <i class="fa-solid fa-circle-check" style="font-size:2rem;color:var(--accent-green);"></i>
+            <p style="margin-top:0.5rem;">No errors found</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="table-card">
+        <div class="chart-header">
+            <div class="chart-title">
+                <i class="fa-solid fa-clock" style="color:var(--accent-cyan);"></i>
+                <span>Hourly Request Counts</span>
+            </div>
+        </div>
+        {% if result.hour_counts %}
+        <table class="data-table">
+            <thead>
+                <tr><th>Hour (24h)</th><th>Requests</th><th>Activity</th></tr>
+            </thead>
+            <tbody>
+                {% for hour, count in result.hour_counts.items()|sort(attribute='1', reverse=true) %}
+                <tr>
+                    <td><code style="color:var(--accent-cyan);">{{ hour }}:00</code></td>
+                    <td><strong>{{ count }}</strong></td>
+                    <td>
+                        {% if count > 20 %}
+                            <span class="badge critical">Peak</span>
+                        {% elif count > 10 %}
+                            <span class="badge high">High</span>
+                        {% elif count > 5 %}
+                            <span class="badge medium">Medium</span>
+                        {% else %}
+                            <span class="badge low">Low</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align:center;padding:2rem;color:var(--text-muted);">
+            <p>No hourly data available</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ─────────── TOP URLS ─────────── -->
+{% if result.url_counts %}
+<div class="table-card fade-in">
+    <div class="chart-header">
+        <div class="chart-title">
+            <i class="fa-solid fa-link" style="color:var(--accent-purple);"></i>
+            <span>Top 10 Requested URLs</span>
+        </div>
+        <span class="badge success">{{ result.url_counts|length }} total</span>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr><th>#</th><th>URL</th><th>Requests</th><th>Share</th></tr>
+        </thead>
+        <tbody>
+            {% set total_url_reqs = result.url_counts.values()|sum %}
+            {% for url, count in result.url_counts.items()|sort(attribute='1', reverse=true) %}
+                {% if loop.index <= 10 %}
+                <tr>
+                    <td><code style="color:var(--text-muted)">{{ loop.index }}</code></td>
+                    <td><code style="color:var(--accent-cyan);font-size:0.85rem;">{{ url }}</code></td>
+                    <td><strong>{{ count }}</strong></td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:0.5rem;">
+                            <div style="flex:1;height:6px;background:var(--bg-secondary);border-radius:3px;overflow:hidden;">
+                                <div style="height:100%;width:{{ (count / total_url_reqs * 100)|round(1) }}%;background:linear-gradient(90deg,var(--accent-cyan),var(--accent-purple));"></div>
+                            </div>
+                            <span style="font-size:0.75rem;color:var(--text-muted);min-width:40px;">{{ (count / total_url_reqs * 100)|round(1) }}%</span>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- ─────────── COUNTRIES ─────────── -->
+{% if result.country_counts %}
+<div class="table-card fade-in">
+    <div class="chart-header">
+        <div class="chart-title">
+            <i class="fa-solid fa-globe" style="color:var(--accent-green);"></i>
+            <span>Traffic by Country</span>
+        </div>
+        <span class="badge success">{{ result.country_counts|length }} countries</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.75rem;">
+        {% for country, count in result.country_counts.items()|sort(attribute='1', reverse=true) %}
+        <div style="display:flex;justify-content:space-between;padding:0.75rem 1rem;background:var(--bg-secondary);border-radius:8px;border:1px solid var(--border-color);">
+            <span style="display:flex;align-items:center;gap:0.5rem;">
+                <i class="fa-solid fa-location-dot" style="color:var(--accent-cyan);"></i>
+                <code style="color:var(--text-primary);font-weight:600;">{{ country }}</code>
+            </span>
+            <strong style="color:var(--accent-cyan);">{{ count }}</strong>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.08)';
+Chart.defaults.font.family = "'Inter', sans-serif";
+
+// ─────────── ERROR BAR CHART ───────────
+{% if result.error_counts %}
+const errorLabels = {{ result.error_counts.keys()|list|tojson }};
+const errorData = {{ result.error_counts.values()|list|tojson }};
+
+// Color based on severity
+const errorColors = errorLabels.map(label => {
+    if (label.startsWith('5')) return 'rgba(239, 68, 68, 0.8)';
+    if (label.startsWith('4')) return 'rgba(245, 158, 11, 0.8)';
+    return 'rgba(100, 116, 139, 0.8)';
+});
+
+const errorChart = new Chart(document.getElementById('errorChart'), {
+    type: 'bar',
+    data: {
+        labels: errorLabels,
+        datasets: [{
+            label: 'Occurrences',
+            data: errorData,
+            backgroundColor: errorColors,
+            borderColor: errorColors.map(c => c.replace('0.8', '1')),
+            borderWidth: 1,
+            borderRadius: 8,
+            barPercentage: 0.7
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                borderColor: 'rgba(239, 68, 68, 0.3)',
+                borderWidth: 1,
+                padding: 12,
+            }
+        },
+        scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { grid: { display: false } }
+        }
+    }
+});
+{% endif %}
+
+// ─────────── HOURLY LINE CHART ───────────
+{% if result.hour_counts %}
+const hourLabelsSorted = {{ result.hour_counts.keys()|list|sort|tojson }};
+const hourDataSorted = hourLabelsSorted.map(h => {{ result.hour_counts|tojson }}[h]);
+
+const hourChart = new Chart(document.getElementById('hourChart'), {
+    type: 'line',
+    data: {
+        labels: hourLabelsSorted.map(h => h + ':00'),
+        datasets: [{
+            label: 'Requests',
+            data: hourDataSorted,
+            borderColor: '#00d9ff',
+            backgroundColor: 'rgba(0, 217, 255, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#00d9ff',
+            pointBorderColor: '#0a0e1a',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 8,
+            pointHoverBackgroundColor: '#a855f7',
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                borderColor: 'rgba(0, 217, 255, 0.3)',
+                borderWidth: 1,
+                padding: 12,
+            }
+        },
+        scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { grid: { display: false } }
+        }
+    }
+});
+{% endif %}
+
+// ─────────── SOCKET.IO REAL-TIME ───────────
+try {
+    const socket = io();
+    socket.on('connect', () => console.log('✅ Real-time connected'));
+    socket.on('disconnect', () => console.log('❌ Real-time disconnected'));
+
+    socket.on('analyzed', function(data) {
+        console.log('📥 New log analyzed:', data);
+        // Real-time update code here
+    });
+
+    socket.on('new_analysis', function(data) {
+        console.log('🎉 New analysis uploaded:', data);
+    });
+} catch (e) {
+    console.log('SocketIO not available:', e);
+}
+</script>
+{% endblock %}

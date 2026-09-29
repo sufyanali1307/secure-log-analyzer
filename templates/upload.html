@@ -1,209 +1,245 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload | Secure Log Analyzer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+{% extends "base.html" %}
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #f8fafc;  /* same as login page right side */
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1.5rem;
-        }
+{% block title %}Upload Logs - Secure Log Analyzer{% endblock %}
 
-        /* White card (same as login card) */
-        .upload-card {
-            background: white;
-            border-radius: 2rem;
-            padding: 2.5rem;
-            width: 100%;
-            max-width: 560px;
-            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.1);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
+{% block content %}
+<div class="page-header fade-in">
+    <h1>📁 Upload <span class="accent">Log File</span></h1>
+    <p>Drag & drop or browse to analyze your log files</p>
+</div>
 
-        .upload-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 25px 40px -12px rgba(0,0,0,0.15);
-        }
+<div style="max-width:700px;margin:0 auto;">
 
-        /* Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-        .header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #0F2C39;
-            margin: 0;
-        }
-        .nav-links {
-            display: flex;
-            gap: 1.2rem;
-        }
-        .nav-links a {
-            color: #1A4A5F;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.2s;
-            border-bottom: 1px dashed transparent;
-        }
-        .nav-links a:hover {
-            border-bottom-color: #1A4A5F;
-            color: #0B2B40;
-        }
+    <!-- ─────────── INFO BANNER ─────────── -->
+    <div class="alert success fade-in" style="margin-bottom:1.5rem;">
+        <i class="fa-solid fa-circle-info" style="font-size:1.2rem;"></i>
+        <div>
+            <strong>Supported Formats:</strong> Apache / Nginx, JSON, Syslog, ISO timestamp
+        </div>
+    </div>
 
-        /* Upload zone */
-        .upload-zone {
-            border: 2px dashed #cbd5e1;
-            border-radius: 1rem;
-            background: #f1f5f9;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-bottom: 1.8rem;
-        }
-        .upload-zone:hover {
-            border-color: #1A4A5F;
-            background: #f8fafc;
-            transform: scale(1.01);
-        }
-        .upload-icon {
-            font-size: 3.5rem;
-            margin-bottom: 0.75rem;
-        }
-        .upload-zone p {
-            color: #334155;
-            margin-bottom: 0.5rem;
-        }
-        .browse-btn {
-            background: #e2e8f0;
-            color: #1A4A5F;
-            padding: 0.5rem 1.2rem;
-            border-radius: 2rem;
-            font-weight: 500;
-            display: inline-block;
-            transition: all 0.2s;
-        }
-        .browse-btn:hover {
-            background: #cbd5e1;
-        }
-        .file-hint {
-            font-size: 0.75rem;
-            color: #64748b;
-            margin-top: 0.75rem;
-        }
+    <!-- ─────────── FLASH MESSAGES ─────────── -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for msg in messages %}
+                <div class="alert success fade-in" style="margin-bottom:1rem;">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>{{ msg }}</span>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
-        /* Submit button (same teal style as login button) */
-        .btn-upload {
-            width: 100%;
-            background: #1A4A5F;
-            color: white;
-            border: none;
-            border-radius: 0.75rem;
-            padding: 0.9rem;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-        .btn-upload:hover {
-            background: #0B2B40;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(26,74,95,0.3);
-        }
-
-        /* Flash message (same as login success style) */
-        .flash-success {
-            background: #D1FAE5;
-            border-left: 4px solid #10B981;
-            color: #065F46;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            font-size: 0.9rem;
-            margin-bottom: 1.5rem;
-        }
-
-        /* Responsive */
-        @media (max-width: 500px) {
-            .upload-card {
-                padding: 1.5rem;
-            }
-            .header {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-            }
-            .nav-links {
-                justify-content: center;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="upload-card">
-        <div class="header">
-            <h1>📁 Upload Log File</h1>
-            <div class="nav-links">
-                <a href="{{ url_for('history') }}">📜 History</a>
-                <a href="{{ url_for('logout') }}">🚪 Logout</a>
+    <!-- ─────────── UPLOAD FORM ─────────── -->
+    <form method="post" enctype="multipart/form-data" id="uploadForm" class="fade-in">
+        <div class="upload-box" id="uploadZone">
+            <div class="upload-icon">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <div class="upload-title" id="uploadText">Drag & drop your log file here</div>
+            <div class="upload-subtitle">or click the button below to browse</div>
+            <label for="logfileInput" class="btn btn-primary" style="cursor:pointer;">
+                <i class="fa-solid fa-folder-open"></i> Browse Files
+            </label>
+            <input type="file" name="logfile" id="logfileInput"
+                   accept=".log,.txt,.json,.out" style="display: none;" required>
+            <div class="upload-subtitle" style="margin-top:1.5rem;font-size:0.8rem;">
+                <i class="fa-solid fa-file-shield"></i>
+                Allowed: <strong>.log, .txt, .json, .out</strong> &nbsp;·&nbsp; Max: <strong>100 MB</strong>
             </div>
         </div>
 
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for msg in messages %}
-                    <div class="flash-success">{{ msg }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <form method="post" enctype="multipart/form-data">
-            <div class="upload-zone" onclick="document.getElementById('logfileInput').click()">
-                <div class="upload-icon">📂</div>
-                <p>Drag & drop your .log file or</p>
-                <label class="browse-btn">Browse Files</label>
-                <input type="file" name="logfile" id="logfileInput" accept=".log" class="hidden" style="display: none;" required>
-                <div class="file-hint">Only .log files accepted</div>
+        <!-- ─────────── FILE PREVIEW ─────────── -->
+        <div id="filePreview" style="display:none;margin-top:1.5rem;padding:1.25rem;background:rgba(16, 185, 129, 0.08);border:1px solid rgba(16, 185, 129, 0.3);border-radius:12px;align-items:center;gap:1rem;">
+            <div style="font-size:2rem;color:var(--accent-green);">
+                <i class="fa-solid fa-file-lines"></i>
             </div>
-
-            <button type="submit" class="btn-upload">
-                🚀 Run MapReduce Analysis
+            <div style="flex:1;min-width:0;">
+                <div id="fileName" style="font-weight:600;color:var(--text-primary);word-break:break-all;"></div>
+                <div id="fileSize" style="font-size:0.8rem;color:var(--text-secondary);margin-top:0.25rem;"></div>
+            </div>
+            <button type="button" id="fileRemove" style="background:rgba(239, 68, 68, 0.15);color:var(--accent-red);border:none;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:1rem;transition:all 0.2s;">
+                <i class="fa-solid fa-xmark"></i>
             </button>
-        </form>
+        </div>
+
+        <!-- ─────────── PROGRESS BAR ─────────── -->
+        <div id="progressContainer" style="display:none;margin-top:1.5rem;">
+            <div style="width:100%;height:8px;background:var(--bg-secondary);border-radius:8px;overflow:hidden;">
+                <div id="progressFill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent-cyan),var(--accent-purple));transition:width 0.3s ease;border-radius:8px;"></div>
+            </div>
+            <div id="progressText" style="font-size:0.85rem;color:var(--text-secondary);text-align:center;margin-top:0.75rem;font-family:'JetBrains Mono',monospace;">
+                Uploading... 0%
+            </div>
+        </div>
+
+        <!-- ─────────── SUBMIT BUTTON ─────────── -->
+        <div style="text-align:center;margin-top:2rem;">
+            <button type="submit" class="btn btn-primary" id="submitBtn" disabled
+                    style="padding:1rem 2rem;font-size:1rem;min-width:280px;justify-content:center;">
+                <i class="fa-solid fa-rocket"></i>
+                Run MapReduce Analysis
+            </button>
+        </div>
+    </form>
+
+    <!-- ─────────── INFO CARDS ─────────── -->
+    <div class="stats-grid fade-in" style="margin-top:2rem;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));">
+        <div class="stat-card" style="text-align:center;">
+            <div class="stat-icon" style="margin:0 auto 0.75rem;"><i class="fa-solid fa-bolt"></i></div>
+            <div class="stat-label">Parallel</div>
+            <div class="stat-change" style="font-size:0.75rem;">MapReduce</div>
+        </div>
+        <div class="stat-card success" style="text-align:center;">
+            <div class="stat-icon" style="margin:0 auto 0.75rem;"><i class="fa-solid fa-chart-pie"></i></div>
+            <div class="stat-label">Charts</div>
+            <div class="stat-change" style="font-size:0.75rem;">Visual analysis</div>
+        </div>
+        <div class="stat-card high" style="text-align:center;">
+            <div class="stat-icon" style="margin:0 auto 0.75rem;"><i class="fa-solid fa-bell"></i></div>
+            <div class="stat-label">Alerts</div>
+            <div class="stat-change" style="font-size:0.75rem;">Auto notifications</div>
+        </div>
+        <div class="stat-card critical" style="text-align:center;">
+            <div class="stat-icon" style="margin:0 auto 0.75rem;"><i class="fa-solid fa-brain"></i></div>
+            <div class="stat-label">Anomaly</div>
+            <div class="stat-change" style="font-size:0.75rem;">ML detection</div>
+        </div>
     </div>
 
-    <script>
-        // Optional: show selected filename
-        document.getElementById('logfileInput').addEventListener('change', function(e) {
-            const fileName = e.target.files[0]?.name;
-            if (fileName) {
-                const zone = document.querySelector('.upload-zone p');
-                zone.innerHTML = `Selected: ${fileName}<br>Click or drag another file`;
-            }
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('logfileInput');
+    const filePreview = document.getElementById('filePreview');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const fileRemove = document.getElementById('fileRemove');
+    const submitBtn = document.getElementById('submitBtn');
+    const uploadText = document.getElementById('uploadText');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const uploadForm = document.getElementById('uploadForm');
+
+    const ALLOWED_EXT = ['.log', '.txt', '.json', '.out'];
+    const MAX_SIZE = 100 * 1024 * 1024;
+
+    function validateFile(file) {
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+        if (!ALLOWED_EXT.includes(ext)) {
+            alert(`❌ Invalid format: ${ext}\nAllowed: ${ALLOWED_EXT.join(', ')}`);
+            return false;
+        }
+        if (file.size > MAX_SIZE) {
+            alert(`❌ File too large: ${formatSize(file.size)}\nMaximum: 100 MB`);
+            return false;
+        }
+        if (file.size === 0) {
+            alert('❌ File is empty');
+            return false;
+        }
+        return true;
+    }
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    function showFile(file) {
+        fileName.textContent = file.name;
+        fileSize.textContent = formatSize(file.size);
+        filePreview.style.display = 'flex';
+        uploadZone.classList.add('has-file');
+        uploadText.textContent = '✅ File ready to upload';
+        submitBtn.disabled = false;
+    }
+
+    function clearFile() {
+        fileInput.value = '';
+        filePreview.style.display = 'none';
+        uploadZone.classList.remove('has-file');
+        uploadText.textContent = 'Drag & drop your log file here';
+        submitBtn.disabled = true;
+    }
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file && validateFile(file)) showFile(file);
+        else clearFile();
+    });
+
+    fileRemove.addEventListener('click', (e) => {
+        e.stopPropagation();
+        clearFile();
+    });
+
+    // Drag & Drop
+    ['dragenter', 'dragover'].forEach(ev => {
+        uploadZone.addEventListener(ev, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadZone.classList.add('dragover');
         });
-    </script>
-</body>
-</html>
+    });
+
+    ['dragleave', 'drop'].forEach(ev => {
+        uploadZone.addEventListener(ev, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadZone.classList.remove('dragover');
+        });
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+        const file = e.dataTransfer.files[0];
+        if (file && validateFile(file)) {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+            showFile(file);
+        }
+    });
+
+    // Submit
+    uploadForm.addEventListener('submit', (e) => {
+        if (!fileInput.files.length) {
+            e.preventDefault();
+            alert('Please select a file first');
+            return;
+        }
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
+        progressContainer.style.display = 'block';
+
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress > 95) progress = 95;
+            progressFill.style.width = progress + '%';
+            progressText.textContent = `Uploading... ${Math.round(progress)}%`;
+        }, 200);
+    });
+
+    // Spinner style injection
+    const style = document.createElement('style');
+    style.textContent = `
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    `;
+    document.head.appendChild(style);
+</script>
+{% endblock %}

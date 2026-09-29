@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}404 - Not Found{% endblock %}
+
+{% block content %}
+<div style="text-align:center;padding:4rem 2rem;">
+    <i class="fa-solid fa-magnifying-glass" style="font-size:5rem;color:var(--accent-cyan);margin-bottom:1.5rem;"></i>
+    <h1 style="font-size:3rem;font-weight:800;margin-bottom:1rem;">404</h1>
+    <h2 style="font-size:1.5rem;color:var(--text-secondary);margin-bottom:2rem;">Page Not Found</h2>
+    <p style="color:var(--text-muted);margin-bottom:2rem;">The page you're looking for doesn't exist.</p>
+    <a href="{{ url_for('upload') }}" class="btn btn-primary">
+        <i class="fa-solid fa-house"></i> Go Home
+    </a>
+</div>
+{% endblock %}

@@ -1,58 +1,223 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Dashboard | Secure Log Analyzer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100">
-    <div class="container mx-auto p-6">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">👑 Admin Dashboard</h1>
-            <div class="space-x-3">
-                <a href="{{ url_for('upload') }}" class="bg-blue-500 text-white px-4 py-2 rounded">📤 Upload Log</a>
-                <a href="{{ url_for('logout') }}" class="bg-red-500 text-white px-4 py-2 rounded">🚪 Logout</a>
-            </div>
-        </div>
+{% extends "base.html" %}
 
-        <!-- User List -->
-        <div class="bg-white rounded-lg shadow p-4 mb-8">
-            <h2 class="text-xl font-semibold mb-3">📋 Registered Users</h2>
-            <table class="min-w-full border">
-                <thead class="bg-gray-200">
-                    <tr><th class="p-2">ID</th><th>Username</th><th>Role</th></tr>
-                </thead>
-                <tbody>
-                    {% for u in users %}
-                    <tr class="border-b">
-                        <td class="p-2">{{ u.id }}</td>
-                        <td>{{ u.username }}</td>
-                        <td><span class="px-2 py-1 rounded text-sm {% if u.role=='admin' %}bg-red-200 text-red-800{% else %}bg-green-200 text-green-800{% endif %}">{{ u.role }}</span></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+{% block title %}Admin Dashboard - Secure Log Analyzer{% endblock %}
 
-        <!-- All Analyses -->
-        <div class="bg-white rounded-lg shadow p-4">
-            <h2 class="text-xl font-semibold mb-3">📄 All Uploaded Files (All Users)</h2>
-            <table class="min-w-full border">
-                <thead class="bg-gray-200">
-                    <tr><th class="p-2">File</th><th>Owner</th><th>Uploaded</th><th>Actions</th></tr>
-                </thead>
-                <tbody>
-                    {% for res in results %}
-                    <tr class="border-b">
-                        <td class="p-2">{{ res.filename }}</td>
-                        <td>{{ res.owner.username }}</td>
-                        <td>{{ res.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td><a href="{{ url_for('view_result', result_id=res.id) }}" class="text-blue-500 underline">View</a></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+{% block content %}
+<div class="page-header fade-in">
+    <h1>👑 Admin <span class="accent">Dashboard</span></h1>
+    <p>Manage users, monitor uploads, and control the system</p>
+</div>
+
+<!-- ─────────── STATS CARDS ─────────── -->
+<div class="stats-grid fade-in">
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+            <span class="stat-label">Total Users</span>
+        </div>
+        <div class="stat-value">{{ users|length }}</div>
+        <div class="stat-change">Registered accounts</div>
+    </div>
+
+    <div class="stat-card critical">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-user-shield"></i></div>
+            <span class="stat-label">Admins</span>
+        </div>
+        <div class="stat-value">{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</div>
+        <div class="stat-change">Privileged accounts</div>
+    </div>
+
+    <div class="stat-card success">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-file-lines"></i></div>
+            <span class="stat-label">Total Uploads</span>
+        </div>
+        <div class="stat-value">{{ results|length }}</div>
+        <div class="stat-change">Log files analyzed</div>
+    </div>
+
+    <div class="stat-card high">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+            <span class="stat-label">Recent (24h)</span>
+        </div>
+        <div class="stat-value" id="recent-count">0</div>
+        <div class="stat-change">Files in last 24 hours</div>
+    </div>
+</div>
+
+<!-- ─────────── ACTION BUTTONS ─────────── -->
+<div class="fade-in" style="display:flex;gap:1rem;margin-bottom:2rem;flex-wrap:wrap;">
+    <a href="{{ url_for('upload') }}" class="btn btn-primary">
+        <i class="fa-solid fa-cloud-arrow-up"></i> Upload Log
+    </a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+        <i class="fa-solid fa-chart-line"></i> View Dashboard
+    </a>
+    <a href="{{ url_for('logout') }}" class="btn btn-secondary" style="color:var(--accent-red);border-color:var(--accent-red);">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+    </a>
+</div>
+
+<!-- ─────────── USERS TABLE ─────────── -->
+<div class="table-card fade-in">
+    <div class="chart-header">
+        <div class="chart-title">
+            <i class="fa-solid fa-users"></i>
+            <span>Registered Users</span>
+        </div>
+        <span class="badge success">{{ users|length }} total</span>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td><code style="color:var(--accent-cyan)">#{{ u.id }}</code></td>
+                <td>
+                    <i class="fa-solid fa-user" style="color:var(--text-muted);margin-right:0.5rem;"></i>
+                    {{ u.username }}
+                </td>
+                <td>
+                    {% if u.role == 'admin' %}
+                        <span class="badge critical">👑 Admin</span>
+                    {% else %}
+                        <span class="badge success">👤 User</span>
+                    {% endif %}
+                </td>
+                <td style="color:var(--text-muted);font-size:0.85rem;">
+                    {{ u.created_at.strftime('%Y-%m-%d %H:%M') if u.created_at else 'N/A' }}
+                </td>
+                <td>
+                    {% if u.username != 'admin' %}
+                    <button onclick="deleteUser({{ u.id }}, '{{ u.username }}')"
+                            class="btn btn-secondary"
+                            style="padding:0.35rem 0.75rem;font-size:0.8rem;color:var(--accent-red);">
+                        <i class="fa-solid fa-trash"></i> Delete
+                    </button>
+                    {% else %}
+                    <span style="color:var(--text-muted);font-size:0.8rem;">Protected</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- ─────────── ALL UPLOADS TABLE ─────────── -->
+<div class="table-card fade-in">
+    <div class="chart-header">
+        <div class="chart-title">
+            <i class="fa-solid fa-file-shield"></i>
+            <span>All Uploaded Files</span>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+            <input type="text" id="searchFiles" placeholder="🔍 Search files..."
+                   style="padding:0.5rem 1rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;color:var(--text-primary);font-family:inherit;">
+            <span class="badge high">{{ results|length }} files</span>
         </div>
     </div>
-</body>
-</html>
+    <table class="data-table" id="filesTable">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Filename</th>
+                <th>Owner</th>
+                <th>Size</th>
+                <th>Uploaded</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for res in results %}
+            <tr>
+                <td><code style="color:var(--accent-cyan)">{{ loop.index }}</code></td>
+                <td>
+                    <i class="fa-solid fa-file-lines" style="color:var(--accent-purple);margin-right:0.5rem;"></i>
+                    {{ res.filename }}
+                </td>
+                <td>
+                    <i class="fa-solid fa-user-circle" style="color:var(--text-muted);margin-right:0.4rem;"></i>
+                    {{ res.owner.username if res.owner else 'Unknown' }}
+                </td>
+                <td style="font-family:'JetBrains Mono',monospace;color:var(--text-secondary);">
+                    {{ '%.1f KB'|format(res.file_size / 1024) if res.file_size else 'N/A' }}
+                </td>
+                <td style="color:var(--text-muted);font-size:0.85rem;">
+                    {{ res.uploaded_at.strftime('%Y-%m-%d %H:%M') if res.uploaded_at else 'N/A' }}
+                </td>
+                <td>
+                    <a href="{{ url_for('view_result', result_id=res.id) }}"
+                       class="btn btn-secondary"
+                       style="padding:0.35rem 0.75rem;font-size:0.8rem;">
+                        <i class="fa-solid fa-eye"></i> View
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem;">
+                    📭 No files uploaded yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ─────────── Search Filter ───────────
+document.getElementById('searchFiles')?.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#filesTable tbody tr');
+    rows.forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
+    });
+});
+
+// ─────────── Recent Count (last 24h) ───────────
+(function() {
+    const rows = document.querySelectorAll('#filesTable tbody tr');
+    const now = new Date();
+    let count = 0;
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 5) return;
+        const dateStr = cells[4].textContent.trim();
+        const date = new Date(dateStr.replace(' ', 'T'));
+        if (!isNaN(date) && (now - date) < 24 * 60 * 60 * 1000) count++;
+    });
+    document.getElementById('recent-count').textContent = count;
+})();
+
+// ─────────── Delete User ───────────
+async function deleteUser(userId, username) {
+    if (!confirm(`⚠️ Delete user "${username}"?\nThis action cannot be undone.`)) return;
+
+    try {
+        const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('❌ Failed: ' + (data.error || 'Unknown error'));
+        }
+    } catch (e) {
+        alert('❌ Network error: ' + e.message);
+    }
+}
+</script>
+{% endblock %}

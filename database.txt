@@ -1,0 +1,6 @@
+postgresql://neondb_owner:npg_F6MEItivgTD8@ep-cool-voice-apdw9wk8.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require
+
+
+postgresql://neondb_owner:npg_F6MEItivgTD8@ep-cool-voice-apdw9wk8.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require
+
+mysecretkey123

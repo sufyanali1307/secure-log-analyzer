@@ -1,42 +1,196 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>My Dashboard | Secure Log Analyzer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100">
-    <div class="container mx-auto p-6">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">📁 My Log Analyses</h1>
-            <div class="space-x-3">
-                <a href="{{ url_for('upload') }}" class="bg-blue-500 text-white px-4 py-2 rounded">⬆️ Upload New</a>
-                <a href="{{ url_for('logout') }}" class="bg-red-500 text-white px-4 py-2 rounded">🚪 Logout</a>
-            </div>
-        </div>
+{% extends "base.html" %}
 
-        {% if results %}
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <table class="min-w-full">
-                <thead class="bg-gray-200">
-                    <tr><th class="p-3 text-left">Filename</th><th>Uploaded</th><th class="text-center">Actions</th></tr>
-                </thead>
-                <tbody>
-                    {% for res in results %}
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-3">{{ res.filename }}</td>
-                        <td>{{ res.uploaded_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                        <td class="text-center"><a href="{{ url_for('view_result', result_id=res.id) }}" class="bg-green-500 text-white px-3 py-1 rounded text-sm">View Results</a></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+{% block title %}My Dashboard - Secure Log Analyzer{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in">
+    <h1>📁 My <span class="accent">Dashboard</span></h1>
+    <p>Your personal log analysis workspace</p>
+</div>
+
+<!-- ─────────── STATS CARDS ─────────── -->
+<div class="stats-grid fade-in">
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-file-lines"></i></div>
+            <span class="stat-label">Total Uploads</span>
         </div>
-        {% else %}
-        <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4">
-            <p>You haven't uploaded any log files yet. <a href="{{ url_for('upload') }}" class="text-blue-600 underline">Upload your first log file</a>.</p>
-        </div>
-        {% endif %}
+        <div class="stat-value">{{ results|length }}</div>
+        <div class="stat-change">Log files analyzed</div>
     </div>
-</body>
-</html>
+
+    <div class="stat-card success">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+            <span class="stat-label">Recent (24h)</span>
+        </div>
+        <div class="stat-value" id="recent-count">0</div>
+        <div class="stat-change">Uploaded in last 24 hours</div>
+    </div>
+
+    <div class="stat-card high">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-chart-line"></i></div>
+            <span class="stat-label">Total Requests</span>
+        </div>
+        <div class="stat-value" id="total-requests">0</div>
+        <div class="stat-change">Across all log files</div>
+    </div>
+
+    <div class="stat-card critical">
+        <div class="stat-header">
+            <div class="stat-icon"><i class="fa-solid fa-bug"></i></div>
+            <span class="stat-label">Total Errors</span>
+        </div>
+        <div class="stat-value" id="total-errors">0</div>
+        <div class="stat-change">4xx + 5xx responses</div>
+    </div>
+</div>
+
+<!-- ─────────── ACTION BUTTONS ─────────── -->
+<div class="fade-in" style="display:flex;gap:1rem;margin-bottom:2rem;flex-wrap:wrap;">
+    <a href="{{ url_for('upload') }}" class="btn btn-primary">
+        <i class="fa-solid fa-cloud-arrow-up"></i> Upload New Log
+    </a>
+    <a href="{{ url_for('history') }}" class="btn btn-secondary">
+        <i class="fa-solid fa-clock-rotate-left"></i> View History
+    </a>
+</div>
+
+<!-- ─────────── UPLOADS TABLE ─────────── -->
+<div class="table-card fade-in">
+    <div class="chart-header">
+        <div class="chart-title">
+            <i class="fa-solid fa-file-shield"></i>
+            <span>My Uploaded Files</span>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+            <input type="text" id="searchFiles" placeholder="🔍 Search files..."
+                   style="padding:0.5rem 1rem;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;color:var(--text-primary);font-family:inherit;min-width:200px;">
+            <span class="badge success">{{ results|length }} files</span>
+        </div>
+    </div>
+
+    {% if results %}
+    <div style="overflow-x:auto;">
+        <table class="data-table" id="filesTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Filename</th>
+                    <th>Uploaded</th>
+                    <th>Size</th>
+                    <th>Requests</th>
+                    <th>Errors</th>
+                    <th>Status</th>
+                    <th style="text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for res in results %}
+                <tr>
+                    <td><code style="color:var(--accent-cyan)">{{ loop.index }}</code></td>
+                    <td>
+                        <i class="fa-solid fa-file-lines" style="color:var(--accent-purple);margin-right:0.5rem;"></i>
+                        <strong>{{ res.filename }}</strong>
+                    </td>
+                    <td style="color:var(--text-muted);font-size:0.85rem;">
+                        <i class="fa-solid fa-calendar" style="margin-right:0.3rem;"></i>
+                        {{ res.uploaded_at.strftime('%Y-%m-%d %H:%M') }}
+                    </td>
+                    <td style="font-family:'JetBrains Mono',monospace;color:var(--text-secondary);">
+                        {{ '%.1f KB'|format(res.file_size / 1024) if res.file_size else 'N/A' }}
+                    </td>
+                    <td>
+                        <span class="badge success">{{ res.total_requests() if res.total_requests else 0 }}</span>
+                    </td>
+                    <td>
+                        {% set err_count = res.total_errors() if res.total_errors else 0 %}
+                        {% if err_count > 0 %}
+                            <span class="badge critical">{{ err_count }}</span>
+                        {% else %}
+                            <span class="badge low">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set err_rate = res.error_rate() if res.error_rate else 0 %}
+                        {% if err_rate >= 50 %}
+                            <span class="badge critical">Critical</span>
+                        {% elif err_rate >= 20 %}
+                            <span class="badge high">High</span>
+                        {% elif err_rate >= 5 %}
+                            <span class="badge medium">Medium</span>
+                        {% else %}
+                            <span class="badge success">Healthy</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        <a href="{{ url_for('view_result', result_id=res.id) }}"
+                           class="btn btn-primary"
+                           style="padding:0.35rem 0.75rem;font-size:0.8rem;">
+                            <i class="fa-solid fa-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="padding:3rem 2rem;text-align:center;color:var(--text-muted);">
+        <i class="fa-solid fa-inbox" style="font-size:3rem;color:var(--accent-cyan);opacity:0.5;margin-bottom:1rem;"></i>
+        <p style="font-size:1.1rem;margin-bottom:1rem;">You haven't uploaded any log files yet</p>
+        <a href="{{ url_for('upload') }}" class="btn btn-primary">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Your First Log
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ─────────── Live Search Filter ───────────
+document.getElementById('searchFiles')?.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#filesTable tbody tr');
+    rows.forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
+    });
+});
+
+// ─────────── Calculate Stats ───────────
+(function() {
+    const rows = document.querySelectorAll('#filesTable tbody tr');
+    const now = new Date();
+    let recentCount = 0;
+    let totalRequests = 0;
+    let totalErrors = 0;
+
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 8) return;
+
+        // Recent count (last 24h)
+        const dateStr = cells[2].textContent.trim().replace('📅', '').trim();
+        const date = new Date(dateStr.replace(' ', 'T'));
+        if (!isNaN(date) && (now - date) < 24 * 60 * 60 * 1000) recentCount++;
+
+        // Total requests
+        const reqStr = cells[4].textContent.trim();
+        const reqNum = parseInt(reqStr);
+        if (!isNaN(reqNum)) totalRequests += reqNum;
+
+        // Total errors
+        const errStr = cells[5].textContent.trim();
+        const errNum = parseInt(errStr);
+        if (!isNaN(errNum)) totalErrors += errNum;
+    });
+
+    document.getElementById('recent-count').textContent = recentCount;
+    document.getElementById('total-requests').textContent = totalRequests;
+    document.getElementById('total-errors').textContent = totalErrors;
+})();
+</script>
+{% endblock %}
